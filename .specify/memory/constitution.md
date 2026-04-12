@@ -1,50 +1,44 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+# EMS Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Static-First, Serverless
+The app ships as a static SPA on Cloudflare Pages. No dedicated backend server. All dynamic behavior runs in the browser against Supabase. Any future server-side logic lives in Cloudflare Pages Functions.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### II. Database is the Security Boundary
+Row Level Security (RLS), constraints, triggers, and DB functions enforce every rule (roles, financial immutability, unique IDs). The UI is **not trusted**. No privileged keys in the client bundle — only the publishable (anon) key.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### III. Financial Data Integrity
+Payment records are immutable after creation. Deletion is forbidden at the DB level; cancellation is a separate write with an audit trail. Receipt numbers are DB-generated (sequence), never client-side.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### IV. Arabic-First, RTL-Native
+UI is Arabic with RTL layout by default. All components use logical properties (start/end, not left/right). Fonts support Arabic rendering. Copy lives in `src/i18n/ar.json`.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### V. Fast Data Entry
+Forms are keyboard-first, validation is immediate (Zod), common actions are ≤3 keystrokes away. Per SC-001/SC-002: student registration <1 min, payment+receipt <2 min.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+### VI. Simplicity & YAGNI
+No speculative abstractions. No mocks in place of real Supabase calls. Free-tier-friendly: no extra services, no paid APIs.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+## Technology Constraints
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+- **Frontend**: Vite + React 19 + TypeScript (static build)
+- **Styling**: Tailwind v4 + shadcn-style components, RTL via logical properties
+- **Database**: Supabase (managed PostgreSQL, free tier)
+- **Auth**: Supabase Auth + RLS roles (admin, staff, finance)
+- **Router**: react-router-dom v7
+- **i18n**: i18next (client-only)
+- **Forms**: react-hook-form + zod
+- **PDF**: @react-pdf/renderer (browser)
+- **Excel**: xlsx (browser)
+- **Lint/format**: Biome
+- **Hosting**: Cloudflare Pages (static) + GitHub repo
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+## Development Workflow
 
-## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
+- Every user story is specified, planned, tasked, implemented, linted.
+- Every DB table must have RLS policies before it holds data.
+- Commits follow conventional style; atomic per logical change.
+- No PR merges without Biome clean pass.
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
-
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.0.0 | **Ratified**: 2026-04-13 | **Last Amended**: 2026-04-13
