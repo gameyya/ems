@@ -117,14 +117,7 @@ export function StudentDetailPage() {
         </Button>
       </div>
 
-      <PageHeader
-        title={student.full_name}
-        description={
-          <span className="font-mono text-xs text-[color:var(--color-muted-foreground)]">
-            {student.code}
-          </span>
-        }
-      />
+      <PageHeader title={student.full_name} description={student.code} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-1 space-y-4">

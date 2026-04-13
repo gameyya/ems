@@ -3,7 +3,7 @@
 
 export type UserRole = "admin" | "staff" | "finance";
 export type PaymentMethod = "cash" | "other";
-export type AttendanceStatus = "present" | "absent";
+export type AttendanceStatus = "present" | "absent" | "late" | "excused";
 
 export interface Profile {
   id: string;
