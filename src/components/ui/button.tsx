@@ -11,6 +11,7 @@ const buttonVariants = cva(
           "bg-[color:var(--color-primary)] text-[color:var(--color-primary-foreground)] hover:brightness-110",
         destructive:
           "bg-[color:var(--color-destructive)] text-[color:var(--color-destructive-foreground)] hover:brightness-110",
+        warning: "bg-amber-500 text-white hover:brightness-110",
         outline:
           "border bg-transparent hover:bg-[color:var(--color-accent)] hover:text-[color:var(--color-accent-foreground)]",
         secondary:

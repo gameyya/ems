@@ -10,6 +10,7 @@ import { PaymentsPage } from "@/pages/payments";
 import { ReceiptPage } from "@/pages/receipt";
 import { ReportsPage } from "@/pages/reports";
 import { SettingsPage } from "@/pages/settings";
+import { StudentDetailPage } from "@/pages/student-detail";
 import { StudentsPage } from "@/pages/students";
 import { TeachersPage } from "@/pages/teachers";
 
@@ -27,6 +28,7 @@ export default function App() {
         >
           <Route index element={<DashboardPage />} />
           <Route path="students" element={<StudentsPage />} />
+          <Route path="students/:studentId" element={<StudentDetailPage />} />
           <Route path="teachers" element={<TeachersPage />} />
           <Route path="classes" element={<ClassesPage />} />
           <Route

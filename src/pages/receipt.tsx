@@ -1,4 +1,4 @@
-import { toPng } from "html-to-image";
+import { toJpeg } from "html-to-image";
 import jsPDF from "jspdf";
 import { Download, Printer } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -17,7 +17,12 @@ interface ReceiptData {
   notes: string | null;
   cancelled_at: string | null;
   student: { full_name: string; code: string } | null;
-  settings: { institution_name_ar: string; address: string | null; phone: string | null };
+  settings: {
+    institution_name_ar: string;
+    address: string | null;
+    phone: string | null;
+    receipt_page_size?: "a4" | "a5" | "a6" | "letter";
+  };
 }
 
 export function ReceiptPage() {
@@ -59,20 +64,26 @@ export function ReceiptPage() {
     setExporting(true);
     try {
       const node = receiptRef.current;
-      const dataUrl = await toPng(node, {
+      const dataUrl = await toJpeg(node, {
         pixelRatio: 2,
+        quality: 0.85,
         backgroundColor: "#ffffff",
         cacheBust: true,
       });
-      // A5 portrait: 148 x 210 mm; leave 10mm margin
-      const pdf = new jsPDF({ unit: "mm", format: "a5", orientation: "portrait" });
+      const format = data.settings.receipt_page_size ?? "a5";
+      const pdf = new jsPDF({
+        unit: "mm",
+        format,
+        orientation: "portrait",
+        compress: true,
+      });
       const pageW = pdf.internal.pageSize.getWidth();
       const pageH = pdf.internal.pageSize.getHeight();
       const margin = 10;
       const imgW = pageW - margin * 2;
       const ratio = node.offsetHeight / node.offsetWidth;
       const imgH = Math.min(imgW * ratio, pageH - margin * 2);
-      pdf.addImage(dataUrl, "PNG", margin, margin, imgW, imgH);
+      pdf.addImage(dataUrl, "JPEG", margin, margin, imgW, imgH, undefined, "FAST");
       pdf.save(`receipt-${data.receipt_code}.pdf`);
     } finally {
       setExporting(false);
@@ -82,8 +93,11 @@ export function ReceiptPage() {
   if (loading) return <div className="p-8">{t("common.loading")}</div>;
   if (!data) return <div className="p-8">{t("common.noResults")}</div>;
 
+  const pageSize = data.settings.receipt_page_size ?? "a5";
+
   return (
     <div className="max-w-3xl mx-auto">
+      <style>{`@page { size: ${pageSize} portrait; margin: 10mm; }`}</style>
       <div className="mb-4 flex justify-between">
         <h1 className="text-xl font-bold">
           {t("receipts.title")} — {data.receipt_code}
@@ -102,7 +116,7 @@ export function ReceiptPage() {
 
       <div
         ref={receiptRef}
-        className="print-area bg-white border rounded-lg p-8 shadow-sm print:border-0 print:shadow-none"
+        className="print-area receipt-print bg-white border rounded-lg p-8 shadow-sm print:border-0 print:shadow-none"
       >
         <div className="flex items-start justify-between mb-6 border-b pb-4">
           <div>
@@ -118,7 +132,9 @@ export function ReceiptPage() {
           </div>
           <div className="text-end">
             <div className="text-xs text-slate-500">{t("receipts.receiptNo")}</div>
-            <div className="font-mono font-bold text-lg">{data.receipt_code}</div>
+            <div className="font-mono font-bold text-lg whitespace-nowrap">
+              {data.receipt_code}
+            </div>
             <div className="text-sm text-slate-600 mt-1">{formatDate(data.payment_date)}</div>
           </div>
         </div>
@@ -144,9 +160,9 @@ export function ReceiptPage() {
           )}
         </div>
 
-        <div className="bg-sky-50 border border-sky-500 rounded-lg p-6 my-8 text-end">
+        <div className="receipt-amount bg-sky-50 border border-sky-500 rounded-lg p-6 my-8 text-end">
           <div className="text-xs text-sky-700">{t("receipts.amount")}</div>
-          <div className="text-4xl font-bold text-sky-900 mt-1">
+          <div className="amount-value text-4xl font-bold text-sky-900 mt-1">
             {formatCurrency(Number(data.amount))}
           </div>
         </div>
@@ -157,7 +173,7 @@ export function ReceiptPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-10 mt-16">
+        <div className="receipt-footer grid grid-cols-2 gap-10 mt-16">
           <div className="border-t pt-2 text-center text-xs text-slate-500">
             {t("receipts.institutionStamp")}
           </div>

@@ -5,7 +5,7 @@ import { utils as xlsxUtils, writeFile as xlsxWrite } from "xlsx";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/ui/page-header";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
@@ -77,6 +77,7 @@ export function ReportsPage() {
   const exportExcel = () => {
     let sheet: Record<string, string | number>[] = [];
     let filename = "report";
+    let sheetName = "Sheet1";
     if (tab === "students") {
       sheet = (students ?? []).map((s) => ({
         الكود: s.code,
@@ -87,6 +88,7 @@ export function ReportsPage() {
         "تاريخ التسجيل": s.enrollment_date,
       }));
       filename = "students";
+      sheetName = "students";
     } else if (tab === "classes") {
       sheet = (classes ?? []).map((c) => ({
         "اسم الفصل": c.name,
@@ -94,6 +96,7 @@ export function ReportsPage() {
         المسجلون: c.enrolled,
       }));
       filename = "classes";
+      sheetName = "classes";
     } else if (tab === "payments") {
       sheet = (payments ?? []).map((p) => ({
         "رقم الإيصال": p.receipt_code,
@@ -104,6 +107,7 @@ export function ReportsPage() {
         الحالة: p.cancelled_at ? "ملغاة" : "فعّالة",
       }));
       filename = `payments-${from}-to-${to}`;
+      sheetName = "payments";
     } else if (tab === "balances") {
       sheet = (balances ?? []).map((b) => ({
         الطالب: b.full_name,
@@ -111,10 +115,11 @@ export function ReportsPage() {
         "عدد المدفوعات": b.payment_count,
       }));
       filename = "balances";
+      sheetName = "balances";
     }
     const ws = xlsxUtils.json_to_sheet(sheet);
     const wb = xlsxUtils.book_new();
-    xlsxUtils.book_append_sheet(wb, ws, filename);
+    xlsxUtils.book_append_sheet(wb, ws, sheetName);
     xlsxWrite(wb, `${filename}.xlsx`);
   };
 
@@ -159,11 +164,11 @@ export function ReportsPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
             <div>
               <Label>{t("reports.from")}</Label>
-              <Input type="date" dir="ltr" value={from} onChange={(e) => setFrom(e.target.value)} />
+              <DatePicker value={from} onChange={setFrom} />
             </div>
             <div>
               <Label>{t("reports.to")}</Label>
-              <Input type="date" dir="ltr" value={to} onChange={(e) => setTo(e.target.value)} />
+              <DatePicker value={to} onChange={setTo} />
             </div>
             <div>
               <Label>{t("reports.totalPayments")}</Label>

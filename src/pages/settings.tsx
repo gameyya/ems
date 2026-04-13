@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/ui/page-header";
+import { Select } from "@/components/ui/select";
 import { useSupabaseQuery } from "@/hooks/use-supabase-query";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
@@ -20,6 +21,7 @@ const schema = z.object({
   address: z.string().optional().or(z.literal("")),
   phone: z.string().optional().or(z.literal("")),
   currency_code: z.string().min(2),
+  receipt_page_size: z.enum(["a4", "a5", "a6", "letter"]),
 });
 type FormData = z.infer<typeof schema>;
 
@@ -43,6 +45,7 @@ export function SettingsPage() {
         address: settings.address ?? "",
         phone: settings.phone ?? "",
         currency_code: settings.currency_code,
+        receipt_page_size: settings.receipt_page_size ?? "a5",
       });
     }
   }, [settings, form]);
@@ -57,6 +60,7 @@ export function SettingsPage() {
         address: data.address || null,
         phone: data.phone || null,
         currency_code: data.currency_code,
+        receipt_page_size: data.receipt_page_size,
       })
       .eq("id", 1);
     if (error) return toast.error(error.message);
@@ -96,13 +100,24 @@ export function SettingsPage() {
                 <Input dir="ltr" className="text-start" {...form.register("phone")} />
               </div>
             </div>
-            <div>
-              <Label>{t("settings.currencyCode")}</Label>
-              <Input
-                dir="ltr"
-                className="text-start max-w-[100px]"
-                {...form.register("currency_code")}
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>{t("settings.currencyCode")}</Label>
+                <Input
+                  dir="ltr"
+                  className="text-start max-w-[100px]"
+                  {...form.register("currency_code")}
+                />
+              </div>
+              <div>
+                <Label>{t("settings.receiptPageSize")}</Label>
+                <Select {...form.register("receipt_page_size")}>
+                  <option value="a4">A4</option>
+                  <option value="a5">A5</option>
+                  <option value="a6">A6</option>
+                  <option value="letter">Letter</option>
+                </Select>
+              </div>
             </div>
             <div>
               <Button type="submit" disabled={form.formState.isSubmitting}>

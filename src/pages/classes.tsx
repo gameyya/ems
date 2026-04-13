@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Pencil, Plus, Trash2, Users } from "lucide-react";
+import { Pencil, Plus, Search, Trash2, Users } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -11,7 +11,7 @@ import { Empty } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/ui/page-header";
-import { Select } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useCan } from "@/context/auth";
@@ -212,14 +212,15 @@ export function ClassesPage() {
           </div>
           <div>
             <Label>{t("classes.teacher")}</Label>
-            <Select {...form.register("teacher_id")}>
-              <option value="">— {t("classes.selectTeacher")} —</option>
-              {(teachers ?? []).map((t2) => (
-                <option key={t2.id} value={t2.id}>
-                  {t2.full_name}
-                </option>
-              ))}
-            </Select>
+            <Combobox
+              value={form.watch("teacher_id") ?? ""}
+              onChange={(v) => form.setValue("teacher_id", v)}
+              options={(teachers ?? []).map((t2) => ({
+                value: t2.id,
+                label: t2.full_name,
+              }))}
+              placeholder={t("classes.selectTeacher")}
+            />
           </div>
           <div>
             <Label>{t("classes.scheduleDays")}</Label>
@@ -240,25 +241,21 @@ export function ClassesPage() {
               ))}
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label>{t("classes.scheduleTime")}</Label>
-              <Input
-                dir="ltr"
-                className="text-start"
-                placeholder="16:00 - 17:30"
-                {...form.register("schedule_time")}
-              />
-            </div>
-            <div>
-              <Label>{t("classes.capacity")}</Label>
-              <Input
-                type="number"
-                dir="ltr"
-                className="text-start"
-                {...form.register("capacity")}
-              />
-            </div>
+          <div>
+            <Label>{t("classes.scheduleTime")}</Label>
+            <TimeRangeInput
+              value={form.watch("schedule_time") ?? ""}
+              onChange={(v) => form.setValue("schedule_time", v)}
+            />
+          </div>
+          <div>
+            <Label>{t("classes.capacity")}</Label>
+            <Input
+              type="number"
+              dir="ltr"
+              className="text-start"
+              {...form.register("capacity")}
+            />
           </div>
           <div>
             <Label>{t("common.notes")}</Label>
@@ -284,6 +281,44 @@ export function ClassesPage() {
           }}
         />
       )}
+    </div>
+  );
+}
+
+function TimeRangeInput({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const [startRaw, endRaw] = value.split("-").map((s) => s.trim());
+  const setRange = (start: string, end: string) => {
+    if (!start && !end) return onChange("");
+    onChange(`${start || ""} - ${end || ""}`);
+  };
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      <div>
+        <div className="text-xs text-[color:var(--color-muted-foreground)] mb-1">من</div>
+        <input
+          type="time"
+          dir="ltr"
+          value={startRaw ?? ""}
+          onChange={(e) => setRange(e.target.value, endRaw ?? "")}
+          className="h-10 w-full rounded-md border bg-[color:var(--color-card)] px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--color-ring)]"
+        />
+      </div>
+      <div>
+        <div className="text-xs text-[color:var(--color-muted-foreground)] mb-1">إلى</div>
+        <input
+          type="time"
+          dir="ltr"
+          value={endRaw ?? ""}
+          onChange={(e) => setRange(startRaw ?? "", e.target.value)}
+          className="h-10 w-full rounded-md border bg-[color:var(--color-card)] px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--color-ring)]"
+        />
+      </div>
     </div>
   );
 }
@@ -338,7 +373,13 @@ function EnrollDialog({ cls, onClose }: { cls: ClassRow; onClose: () => Promise<
     await refetchEnrolled();
   };
 
-  const available = (students ?? []).filter((s) => !enrolledSet.has(s.id));
+  const [searchTerm, setSearchTerm] = useState("");
+  const available = (students ?? []).filter((s) => {
+    if (enrolledSet.has(s.id)) return false;
+    const q = searchTerm.trim().toLowerCase();
+    if (!q) return true;
+    return s.full_name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q);
+  });
 
   return (
     <Dialog open onOpenChange={() => onClose()} className="max-w-2xl">
@@ -376,6 +417,15 @@ function EnrollDialog({ cls, onClose }: { cls: ClassRow; onClose: () => Promise<
         <div>
           <div className="text-sm font-semibold mb-2">
             {t("common.add")} ({available.length})
+          </div>
+          <div className="relative mb-2">
+            <Search className="absolute top-1/2 -translate-y-1/2 start-2 h-3.5 w-3.5 text-[color:var(--color-muted-foreground)] pointer-events-none" />
+            <Input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder={t("students.searchPlaceholder")}
+              className="h-8 ps-7 text-sm"
+            />
           </div>
           <div className="space-y-1 text-sm">
             {available.map((s) => (

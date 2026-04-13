@@ -3,11 +3,11 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Combobox } from "@/components/ui/combobox";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Empty } from "@/components/ui/empty";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/ui/page-header";
-import { Select } from "@/components/ui/select";
 import { useAuth } from "@/context/auth";
 import { useSupabaseQuery } from "@/hooks/use-supabase-query";
 import { useToast } from "@/hooks/use-toast";
@@ -95,18 +95,20 @@ export function AttendancePage() {
       <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-3">
         <div>
           <Label>{t("attendance.forClass")}</Label>
-          <Select value={classId} onChange={(e) => setClassId(e.target.value)}>
-            <option value="">— {t("classes.title")} —</option>
-            {(classes ?? []).map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.code} — {c.name}
-              </option>
-            ))}
-          </Select>
+          <Combobox
+            value={classId}
+            onChange={setClassId}
+            options={(classes ?? []).map((c) => ({
+              value: c.id,
+              label: c.name,
+              hint: c.code,
+            }))}
+            placeholder={t("classes.title")}
+          />
         </div>
         <div>
           <Label>{t("attendance.selectDate")}</Label>
-          <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} dir="ltr" />
+          <DatePicker value={date} onChange={setDate} />
         </div>
         <div className="flex items-end gap-2">
           <Button variant="outline" onClick={() => bulkMark("present")} disabled={!classId}>
@@ -150,8 +152,23 @@ export function AttendancePage() {
                   >
                     {t("attendance.absent")}
                   </Button>
+                  <Button
+                    size="sm"
+                    variant={status === "late" ? "warning" : "outline"}
+                    onClick={() => setMarks((m) => ({ ...m, [s.id]: "late" }))}
+                  >
+                    {t("attendance.late")}
+                  </Button>
                   {status && (
-                    <Badge variant={status === "present" ? "success" : "destructive"}>
+                    <Badge
+                      variant={
+                        status === "present"
+                          ? "success"
+                          : status === "late"
+                            ? "warning"
+                            : "destructive"
+                      }
+                    >
                       {t(`attendance.${status}`)}
                     </Badge>
                   )}

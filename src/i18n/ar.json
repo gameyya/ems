@@ -40,7 +40,8 @@
     "all": "الكل",
     "logout": "تسجيل الخروج",
     "login": "تسجيل الدخول",
-    "dashboard": "لوحة التحكم"
+    "dashboard": "لوحة التحكم",
+    "view": "عرض"
   },
   "nav": {
     "dashboard": "الرئيسية",
@@ -85,7 +86,20 @@
     "searchPlaceholder": "ابحث بالاسم أو الكود...",
     "empty": "لا يوجد طلاب مسجلون بعد",
     "deletedSoft": "تم أرشفة الطالب (البيانات المالية محفوظة)",
-    "count": "{{count}} طالب"
+    "count": "{{count}} طالب",
+    "detail": {
+      "info": "المعلومات الشخصية",
+      "totalPaid": "إجمالي المدفوع",
+      "paymentsCount": "{{count}} دفعة",
+      "cancelledCount": "{{count}} ملغاة",
+      "classes": "الفصول",
+      "attendance": "الحضور",
+      "attendanceRate": "نسبة الحضور",
+      "totalSessions": "إجمالي الحصص",
+      "presentOf": "{{present}} من {{total}}",
+      "payments": "سجل المدفوعات",
+      "noClasses": "لا توجد فصول مسجلة"
+    }
   },
   "teachers": {
     "title": "المعلمون",
@@ -130,6 +144,7 @@
     "record": "تسجيل دفعة",
     "student": "الطالب",
     "selectStudent": "اختر طالباً",
+    "allClasses": "كل الفصول",
     "amount": "المبلغ",
     "method": "طريقة الدفع",
     "methodCash": "نقداً",
@@ -166,6 +181,7 @@
     "saved": "تم حفظ الحضور",
     "present": "حاضر",
     "absent": "غائب",
+    "late": "متأخر",
     "empty": "لا توجد فصول لتسجيل الحضور"
   },
   "reports": {
@@ -193,6 +209,7 @@
     "address": "العنوان",
     "phone": "الهاتف",
     "currencyCode": "عملة",
+    "receiptPageSize": "حجم صفحة الإيصال",
     "saved": "تم حفظ الإعدادات",
     "users": "المستخدمون",
     "addUser": "إضافة مستخدم",

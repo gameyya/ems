@@ -21,6 +21,7 @@ export interface Settings {
   address: string | null;
   phone: string | null;
   currency_code: string;
+  receipt_page_size: "a4" | "a5" | "a6" | "letter";
   updated_at: string;
 }
 

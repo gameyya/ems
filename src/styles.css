@@ -66,6 +66,61 @@
   }
 }
 
+/* react-day-picker theming */
+.rdp-root {
+  --rdp-accent-color: var(--color-primary);
+  --rdp-accent-background-color: var(--color-primary);
+  --rdp-day_button-border-radius: 6px;
+  --rdp-day_button-height: 2.25rem;
+  --rdp-day_button-width: 2.25rem;
+  --rdp-font-family: var(--font-sans);
+  font-family: var(--font-sans);
+}
+.rdp-day_button:hover:not([disabled]) {
+  background-color: var(--color-accent);
+}
+.rdp-today-styled .rdp-day_button {
+  font-weight: 700;
+  color: var(--color-primary);
+}
+.rdp-selected-styled .rdp-day_button {
+  background-color: var(--color-primary);
+  color: white;
+}
+.rdp-selected-styled .rdp-day_button:hover {
+  background-color: var(--color-primary);
+  color: white;
+}
+.rdp-caption_label {
+  font-weight: 600;
+}
+.rdp-dropdowns {
+  display: flex;
+  gap: 0.5rem;
+}
+.rdp-dropdown_root {
+  position: relative;
+}
+.rdp-dropdown {
+  appearance: none;
+  background-color: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 0.25rem 1.75rem 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-foreground);
+  cursor: pointer;
+  font-family: var(--font-sans);
+}
+.rdp-dropdown:hover {
+  background-color: var(--color-accent);
+}
+.rdp-dropdown:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-ring);
+}
+
 @media print {
   body * {
     visibility: hidden;
@@ -80,8 +135,40 @@
     padding: 0;
     margin: 0;
     width: 100%;
+    page-break-inside: avoid;
+    break-inside: avoid;
+    page-break-after: avoid;
   }
-  @page {
-    margin: 12mm;
+  .print-area * {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  html,
+  body {
+    height: auto !important;
+    overflow: hidden !important;
+  }
+  .print-area.receipt-print {
+    padding: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    font-size: 11pt;
+  }
+  .receipt-print h2 {
+    font-size: 16pt !important;
+  }
+  .receipt-print h3 {
+    font-size: 13pt !important;
+    margin-bottom: 0.75rem !important;
+  }
+  .receipt-print .receipt-footer {
+    margin-top: 1.5rem !important;
+  }
+  .receipt-print .receipt-amount {
+    padding: 0.75rem 1rem !important;
+    margin: 0.75rem 0 !important;
+  }
+  .receipt-print .receipt-amount .amount-value {
+    font-size: 22pt !important;
   }
 }

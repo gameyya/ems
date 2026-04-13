@@ -7,6 +7,8 @@ import { Link } from "react-router-dom";
 import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Combobox } from "@/components/ui/combobox";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Dialog, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Empty } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
@@ -42,6 +44,7 @@ export function PaymentsPage() {
   const { session } = useAuth();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [classFilter, setClassFilter] = useState("");
   const [cancelTarget, setCancelTarget] = useState<PaymentWithStudent | null>(null);
   const [cancelReason, setCancelReason] = useState("");
 
@@ -62,6 +65,35 @@ export function PaymentsPage() {
       .order("full_name");
     return { data: res.data ?? [], error: res.error };
   });
+
+  const { data: classes } = useSupabaseQuery(async () => {
+    const res = await supabase
+      .from("classes")
+      .select("id, name")
+      .is("deleted_at", null)
+      .order("name");
+    return { data: res.data ?? [], error: res.error };
+  });
+
+  const { data: enrollments } = useSupabaseQuery(async () => {
+    const res = await supabase.from("enrollments").select("class_id, student_id");
+    return { data: res.data ?? [], error: res.error };
+  });
+
+  const studentsByClass = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    for (const e of enrollments ?? []) {
+      if (!map.has(e.class_id)) map.set(e.class_id, new Set());
+      map.get(e.class_id)?.add(e.student_id);
+    }
+    return map;
+  }, [enrollments]);
+
+  const visibleStudents = useMemo(() => {
+    if (!classFilter) return students ?? [];
+    const ids = studentsByClass.get(classFilter);
+    return (students ?? []).filter((s) => ids?.has(s.id));
+  }, [students, studentsByClass, classFilter]);
 
   const filtered = useMemo(() => {
     if (!payments) return [];
@@ -90,6 +122,7 @@ export function PaymentsPage() {
       payment_date: new Date().toISOString().slice(0, 10),
       notes: "",
     });
+    setClassFilter("");
     setOpen(true);
   };
 
@@ -218,16 +251,38 @@ export function PaymentsPage() {
           <DialogTitle>{t("payments.record")}</DialogTitle>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <div>
-            <Label>{t("payments.student")}</Label>
-            <Select {...form.register("student_id")}>
-              <option value="">— {t("payments.selectStudent")} —</option>
-              {(students ?? []).map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.code} — {s.full_name}
-                </option>
-              ))}
-            </Select>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>{t("classes.title")}</Label>
+              <Select
+                value={classFilter}
+                onChange={(e) => {
+                  setClassFilter(e.target.value);
+                  form.setValue("student_id", "");
+                }}
+              >
+                <option value="">— {t("payments.allClasses")} —</option>
+                {(classes ?? []).map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div>
+              <Label>{t("payments.student")}</Label>
+              <Combobox
+                value={form.watch("student_id") ?? ""}
+                onChange={(v) => form.setValue("student_id", v, { shouldValidate: true })}
+                options={visibleStudents.map((s) => ({
+                  value: s.id,
+                  label: s.full_name,
+                  hint: s.code,
+                }))}
+                placeholder={t("payments.selectStudent")}
+                searchPlaceholder={t("students.searchPlaceholder")}
+              />
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -252,11 +307,9 @@ export function PaymentsPage() {
           </div>
           <div>
             <Label>{t("payments.paymentDate")}</Label>
-            <Input
-              type="date"
-              dir="ltr"
-              className="text-start"
-              {...form.register("payment_date")}
+            <DatePicker
+              value={form.watch("payment_date") ?? ""}
+              onChange={(v) => form.setValue("payment_date", v)}
             />
           </div>
           <div>

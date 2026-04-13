@@ -1,8 +1,9 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { Eye, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -163,6 +164,11 @@ export function StudentsPage() {
                 <TD>{formatDate(s.enrollment_date)}</TD>
                 <TD>
                   <div className="flex gap-1 justify-end">
+                    <Link to={`/students/${s.id}`}>
+                      <Button variant="ghost" size="icon" title={t("common.view")}>
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </Link>
                     {can.canManageStudents && (
                       <Button variant="ghost" size="icon" onClick={() => openEdit(s)}>
                         <Pencil className="h-4 w-4" />
