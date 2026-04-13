@@ -10,7 +10,10 @@ export function formatCurrency(amount: number): string {
     style: "currency",
     currency: "EGP",
     minimumFractionDigits: 2,
-  }).format(amount);
+  })
+    .format(amount)
+    .replace(/\u066B/g, ".")
+    .replace(/\u066C/g, ",");
 }
 
 export function formatDate(date: string | Date): string {
