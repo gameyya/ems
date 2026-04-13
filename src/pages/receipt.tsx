@@ -48,18 +48,11 @@ export function ReceiptPage() {
   const [exporting, setExporting] = useState(false);
   const [sharingTo, setSharingTo] = useState<string | null>(null);
   const [copying, setCopying] = useState(false);
-  const [canShareFiles, setCanShareFiles] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    const nav = navigator as Navigator & {
-      canShare?: (d: { files?: File[] }) => boolean;
-    };
-    try {
-      const probe = new File([new Blob(["x"])], "x.png", { type: "image/png" });
-      setCanShareFiles(Boolean(nav.canShare?.({ files: [probe] })));
-    } catch {
-      setCanShareFiles(false);
-    }
+    const ua = navigator.userAgent;
+    setIsMobile(/Android|iPhone|iPad|iPod|Mobile/i.test(ua));
   }, []);
 
   const { data, loading } = useSupabaseQuery(async () => {
@@ -126,29 +119,34 @@ export function ReceiptPage() {
     const phone = normalizePhone(rawPhone);
     if (!phone) return toast.error(t("common.error"));
     setSharingTo(rawPhone);
+    const text =
+      `${t("receipts.title")} ${data.receipt_code}\n` +
+      `${data.student?.full_name ?? ""}\n` +
+      `${t("payments.amount")}: ${formatCurrency(Number(data.amount))}\n` +
+      `${formatDate(data.payment_date)}`;
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+    const waWin = window.open(url, "_blank");
     try {
-      const text =
-        `${t("receipts.title")} ${data.receipt_code}\n` +
-        `${data.student?.full_name ?? ""}\n` +
-        `${t("payments.amount")}: ${formatCurrency(Number(data.amount))}\n` +
-        `${formatDate(data.payment_date)}`;
       const blob = await toBlob(receiptRef.current, {
         pixelRatio: 2,
         backgroundColor: "#ffffff",
         cacheBust: true,
       });
-      if (!blob) return;
-      const file = new File([blob], `receipt-${data.receipt_code}.png`, {
-        type: "image/png",
-      });
-      const navAny = navigator as Navigator & {
-        share?: (d: { files?: File[]; text?: string; title?: string }) => Promise<void>;
-      };
-      try {
-        await navAny.share?.({ files: [file], text, title: t("receipts.title") });
-      } catch (err) {
-        if ((err as Error).name !== "AbortError") toast.error((err as Error).message);
+      if (blob) {
+        try {
+          await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+          toast.success(t("receipts.imageCopied"));
+        } catch {
+          const dl = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = dl;
+          a.download = `receipt-${data.receipt_code}.png`;
+          a.click();
+          URL.revokeObjectURL(dl);
+          toast.success(t("receipts.imageDownloaded"));
+        }
       }
+      if (!waWin) window.location.href = url;
     } finally {
       setSharingTo(null);
     }
@@ -203,7 +201,7 @@ export function ReceiptPage() {
           {t("receipts.title")} — {data.receipt_code}
         </h1>
         <div className="flex gap-2 flex-wrap">
-          {canShareFiles ? (
+          {isMobile ? (
             phones.map((p) => (
               <Button
                 key={p.raw}
