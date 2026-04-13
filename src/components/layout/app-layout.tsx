@@ -5,14 +5,17 @@ import {
   GraduationCap,
   LayoutDashboard,
   LogOut,
+  Menu,
   Receipt,
   School,
   Settings as SettingsIcon,
   Users,
   Wallet,
+  X,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth, useCan } from "@/context/auth";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +24,21 @@ export function AppLayout() {
   const { profile, signOut } = useAuth();
   const can = useCan();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [mobileOpen]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -45,8 +63,22 @@ export function AppLayout() {
 
   return (
     <div className="flex min-h-screen">
-      <aside className="w-64 border-e bg-[color:var(--color-card)] flex flex-col">
-        <div className="p-6 border-b">
+      {mobileOpen && (
+        <button
+          type="button"
+          aria-label="close menu"
+          className="fixed inset-0 z-30 bg-black/50 lg:hidden"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      <aside
+        className={cn(
+          "fixed inset-y-0 end-0 z-40 w-64 border-s bg-[color:var(--color-card)] flex flex-col transition-transform lg:static lg:translate-x-0 lg:border-s-0 lg:border-e",
+          mobileOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0",
+        )}
+      >
+        <div className="p-6 border-b flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-lg bg-[color:var(--color-primary)] text-white grid place-items-center">
               <Receipt className="h-5 w-5" />
@@ -58,8 +90,16 @@ export function AppLayout() {
               </div>
             </div>
           </div>
+          <button
+            type="button"
+            aria-label="close menu"
+            onClick={() => setMobileOpen(false)}
+            className="lg:hidden p-1 rounded hover:bg-[color:var(--color-accent)]"
+          >
+            <X className="h-5 w-5" />
+          </button>
         </div>
-        <nav className="flex-1 p-3 space-y-1">
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
           {navItems.map((item) => (
             <NavLink
               key={item.to}
@@ -94,8 +134,25 @@ export function AppLayout() {
           </button>
         </div>
       </aside>
-      <main className="flex-1 overflow-auto">
-        <div className="p-8 max-w-7xl mx-auto">
+
+      <main className="flex-1 min-w-0 overflow-auto">
+        <header className="lg:hidden sticky top-0 z-20 flex items-center justify-between gap-3 border-b bg-[color:var(--color-card)] px-4 py-3">
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-md bg-[color:var(--color-primary)] text-white grid place-items-center">
+              <Receipt className="h-4 w-4" />
+            </div>
+            <div className="font-semibold text-sm truncate">{t("app.shortName")}</div>
+          </div>
+          <button
+            type="button"
+            aria-label="open menu"
+            onClick={() => setMobileOpen(true)}
+            className="p-2 rounded hover:bg-[color:var(--color-accent)]"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+        </header>
+        <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
           <Outlet />
         </div>
       </main>
