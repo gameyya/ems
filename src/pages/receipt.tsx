@@ -1,4 +1,5 @@
-import html2pdf from "html2pdf.js";
+import { toPng } from "html-to-image";
+import jsPDF from "jspdf";
 import { Download, Printer } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -57,16 +58,22 @@ export function ReceiptPage() {
     if (!data || !receiptRef.current || exporting) return;
     setExporting(true);
     try {
-      await html2pdf()
-        .set({
-          margin: 10,
-          filename: `receipt-${data.receipt_code}.pdf`,
-          image: { type: "jpeg", quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
-          jsPDF: { unit: "mm", format: "a5", orientation: "portrait" },
-        })
-        .from(receiptRef.current)
-        .save();
+      const node = receiptRef.current;
+      const dataUrl = await toPng(node, {
+        pixelRatio: 2,
+        backgroundColor: "#ffffff",
+        cacheBust: true,
+      });
+      // A5 portrait: 148 x 210 mm; leave 10mm margin
+      const pdf = new jsPDF({ unit: "mm", format: "a5", orientation: "portrait" });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const margin = 10;
+      const imgW = pageW - margin * 2;
+      const ratio = node.offsetHeight / node.offsetWidth;
+      const imgH = Math.min(imgW * ratio, pageH - margin * 2);
+      pdf.addImage(dataUrl, "PNG", margin, margin, imgW, imgH);
+      pdf.save(`receipt-${data.receipt_code}.pdf`);
     } finally {
       setExporting(false);
     }
