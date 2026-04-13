@@ -11,14 +11,8 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 Font.register({
   family: "Tajawal",
   fonts: [
-    {
-      src: "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/tajawal/Tajawal-Regular.ttf",
-      fontWeight: 400,
-    },
-    {
-      src: "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/tajawal/Tajawal-Bold.ttf",
-      fontWeight: 700,
-    },
+    { src: `${window.location.origin}/fonts/Tajawal-Regular.ttf`, fontWeight: 400 },
+    { src: `${window.location.origin}/fonts/Tajawal-Bold.ttf`, fontWeight: 700 },
   ],
 });
 
