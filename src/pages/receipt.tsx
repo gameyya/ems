@@ -46,7 +46,6 @@ export function ReceiptPage() {
   const toast = useToast();
   const receiptRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
-  const [sharingTo, setSharingTo] = useState<string | null>(null);
   const [copying, setCopying] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -114,42 +113,16 @@ export function ReceiptPage() {
     }
   };
 
-  const handleShareWhatsApp = async (rawPhone: string) => {
-    if (!data || !receiptRef.current || sharingTo) return;
+  const handleShareWhatsApp = (rawPhone: string) => {
+    if (!data) return;
     const phone = normalizePhone(rawPhone);
     if (!phone) return toast.error(t("common.error"));
-    setSharingTo(rawPhone);
-    try {
-      const text =
-        `${t("receipts.title")} ${data.receipt_code}\n` +
-        `${data.student?.full_name ?? ""}\n` +
-        `${t("payments.amount")}: ${formatCurrency(Number(data.amount))}\n` +
-        `${formatDate(data.payment_date)}`;
-      const blob = await toBlob(receiptRef.current, {
-        pixelRatio: 2,
-        backgroundColor: "#ffffff",
-        cacheBust: true,
-      });
-      const file = blob
-        ? new File([blob], `receipt-${data.receipt_code}.png`, { type: "image/png" })
-        : null;
-      const navAny = navigator as Navigator & {
-        canShare?: (d: { files?: File[] }) => boolean;
-        share?: (d: { files?: File[]; text?: string; title?: string }) => Promise<void>;
-      };
-      if (file && navAny.canShare?.({ files: [file] }) && navAny.share) {
-        try {
-          await navAny.share({ files: [file], text, title: t("receipts.title") });
-          return;
-        } catch (err) {
-          if ((err as Error).name === "AbortError") return;
-        }
-      }
-      const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
-      window.location.href = url;
-    } finally {
-      setSharingTo(null);
-    }
+    const text =
+      `${t("receipts.title")} ${data.receipt_code}\n` +
+      `${data.student?.full_name ?? ""}\n` +
+      `${t("payments.amount")}: ${formatCurrency(Number(data.amount))}\n` +
+      `${formatDate(data.payment_date)}`;
+    window.location.href = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
   };
 
   const handleCopyImage = async () => {
@@ -202,18 +175,28 @@ export function ReceiptPage() {
         </h1>
         <div className="flex gap-2 flex-wrap">
           {isMobile ? (
-            phones.map((p) => (
+            <>
+              {phones.map((p) => (
+                <Button
+                  key={p.raw}
+                  onClick={() => handleShareWhatsApp(p.raw)}
+                  variant="outline"
+                  className="border-emerald-600 text-emerald-700 hover:bg-emerald-50"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  {p.label}
+                </Button>
+              ))}
               <Button
-                key={p.raw}
-                onClick={() => handleShareWhatsApp(p.raw)}
-                disabled={sharingTo === p.raw}
+                onClick={handleCopyImage}
+                disabled={copying}
                 variant="outline"
                 className="border-emerald-600 text-emerald-700 hover:bg-emerald-50"
               >
-                <MessageCircle className="h-4 w-4" />
-                {p.label}
+                <Copy className="h-4 w-4" />
+                {t("receipts.copyImage")}
               </Button>
-            ))
+            </>
           ) : (
             <Button
               onClick={handleCopyImage}
