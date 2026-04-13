@@ -1,7 +1,6 @@
 import { Download } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { utils as xlsxUtils, writeFile as xlsxWrite } from "xlsx";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -74,7 +73,7 @@ export function ReportsPage() {
     [payments],
   );
 
-  const exportExcel = () => {
+  const exportExcel = async () => {
     let sheet: Record<string, string | number>[] = [];
     let filename = "report";
     let sheetName = "Sheet1";
@@ -117,10 +116,11 @@ export function ReportsPage() {
       filename = "balances";
       sheetName = "balances";
     }
-    const ws = xlsxUtils.json_to_sheet(sheet);
-    const wb = xlsxUtils.book_new();
-    xlsxUtils.book_append_sheet(wb, ws, sheetName);
-    xlsxWrite(wb, `${filename}.xlsx`);
+    const { utils, writeFile } = await import("xlsx");
+    const ws = utils.json_to_sheet(sheet);
+    const wb = utils.book_new();
+    utils.book_append_sheet(wb, ws, sheetName);
+    writeFile(wb, `${filename}.xlsx`);
   };
 
   return (

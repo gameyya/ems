@@ -1,5 +1,3 @@
-import { toBlob, toJpeg } from "html-to-image";
-import jsPDF from "jspdf";
 import { Copy, Download, MessageCircle, Printer } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -87,6 +85,10 @@ export function ReceiptPage() {
     setExporting(true);
     try {
       const node = receiptRef.current;
+      const [{ toJpeg }, { default: jsPDF }] = await Promise.all([
+        import("html-to-image"),
+        import("jspdf"),
+      ]);
       const dataUrl = await toJpeg(node, {
         pixelRatio: 2,
         quality: 0.85,
@@ -129,6 +131,7 @@ export function ReceiptPage() {
     if (!data || !receiptRef.current || copying) return;
     setCopying(true);
     try {
+      const { toBlob } = await import("html-to-image");
       const blob = await toBlob(receiptRef.current, {
         pixelRatio: 2,
         backgroundColor: "#ffffff",
