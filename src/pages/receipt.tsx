@@ -119,34 +119,34 @@ export function ReceiptPage() {
     const phone = normalizePhone(rawPhone);
     if (!phone) return toast.error(t("common.error"));
     setSharingTo(rawPhone);
-    const text =
-      `${t("receipts.title")} ${data.receipt_code}\n` +
-      `${data.student?.full_name ?? ""}\n` +
-      `${t("payments.amount")}: ${formatCurrency(Number(data.amount))}\n` +
-      `${formatDate(data.payment_date)}`;
-    const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
-    const waWin = window.open(url, "_blank");
     try {
+      const text =
+        `${t("receipts.title")} ${data.receipt_code}\n` +
+        `${data.student?.full_name ?? ""}\n` +
+        `${t("payments.amount")}: ${formatCurrency(Number(data.amount))}\n` +
+        `${formatDate(data.payment_date)}`;
       const blob = await toBlob(receiptRef.current, {
         pixelRatio: 2,
         backgroundColor: "#ffffff",
         cacheBust: true,
       });
-      if (blob) {
+      const file = blob
+        ? new File([blob], `receipt-${data.receipt_code}.png`, { type: "image/png" })
+        : null;
+      const navAny = navigator as Navigator & {
+        canShare?: (d: { files?: File[] }) => boolean;
+        share?: (d: { files?: File[]; text?: string; title?: string }) => Promise<void>;
+      };
+      if (file && navAny.canShare?.({ files: [file] }) && navAny.share) {
         try {
-          await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
-          toast.success(t("receipts.imageCopied"));
-        } catch {
-          const dl = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = dl;
-          a.download = `receipt-${data.receipt_code}.png`;
-          a.click();
-          URL.revokeObjectURL(dl);
-          toast.success(t("receipts.imageDownloaded"));
+          await navAny.share({ files: [file], text, title: t("receipts.title") });
+          return;
+        } catch (err) {
+          if ((err as Error).name === "AbortError") return;
         }
       }
-      if (!waWin) window.location.href = url;
+      const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+      window.location.href = url;
     } finally {
       setSharingTo(null);
     }
