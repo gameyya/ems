@@ -1,6 +1,6 @@
-import { Document, Font, Page, PDFDownloadLink, StyleSheet, Text, View } from "@react-pdf/renderer";
+import { Document, Font, Page, pdf, StyleSheet, Text, View } from "@react-pdf/renderer";
 import { Download, Printer } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -154,12 +154,32 @@ export function ReceiptPage() {
     document.title = data ? `${t("receipts.title")} ${data.receipt_code}` : t("receipts.title");
   }, [data, t]);
 
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportPdf = async () => {
+    if (!data || exporting) return;
+    setExporting(true);
+    try {
+      const blob = await pdf(<ReceiptPDF data={data} t={t} />).toBlob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `receipt-${data.receipt_code}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   if (loading) return <div className="p-8">{t("common.loading")}</div>;
   if (!data) return <div className="p-8">{t("common.noResults")}</div>;
 
   return (
     <div className="max-w-3xl mx-auto">
-      <div className="mb-4 flex justify-between print:hidden">
+      <div className="mb-4 flex justify-between">
         <h1 className="text-xl font-bold">
           {t("receipts.title")} — {data.receipt_code}
         </h1>
@@ -168,20 +188,15 @@ export function ReceiptPage() {
             <Printer className="h-4 w-4" />
             {t("common.print")}
           </Button>
-          <PDFDownloadLink
-            document={<ReceiptPDF data={data} t={t} />}
-            fileName={`receipt-${data.receipt_code}.pdf`}
-          >
-            <Button>
-              <Download className="h-4 w-4" />
-              {t("common.exportPdf")}
-            </Button>
-          </PDFDownloadLink>
+          <Button onClick={handleExportPdf} disabled={exporting}>
+            <Download className="h-4 w-4" />
+            {t("common.exportPdf")}
+          </Button>
         </div>
       </div>
 
       {/* On-screen printable receipt */}
-      <div className="bg-white border rounded-lg p-8 shadow-sm print:border-0 print:shadow-none">
+      <div className="print-area bg-white border rounded-lg p-8 shadow-sm print:border-0 print:shadow-none">
         <div className="flex items-start justify-between mb-6 border-b pb-4">
           <div>
             <h2 className="text-2xl font-bold">{data.settings.institution_name_ar}</h2>

@@ -50,3 +50,23 @@
     border-radius: var(--radius);
   }
 }
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+  .print-area {
+    position: absolute;
+    inset: 0;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+  }
+  @page {
+    margin: 12mm;
+  }
+}
