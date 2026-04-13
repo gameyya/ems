@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Save } from "lucide-react";
+import { KeyRound, Save } from "lucide-react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -25,6 +25,17 @@ const schema = z.object({
 });
 type FormData = z.infer<typeof schema>;
 
+const passwordSchema = z
+  .object({
+    new_password: z.string().min(8),
+    confirm_password: z.string().min(8),
+  })
+  .refine((d) => d.new_password === d.confirm_password, {
+    path: ["confirm_password"],
+    message: "mismatch",
+  });
+type PasswordFormData = z.infer<typeof passwordSchema>;
+
 export function SettingsPage() {
   const { t } = useTranslation();
   const toast = useToast();
@@ -49,6 +60,20 @@ export function SettingsPage() {
       });
     }
   }, [settings, form]);
+
+  const passwordForm = useForm<PasswordFormData>({ resolver: zodResolver(passwordSchema) });
+
+  const onChangePassword = async (data: PasswordFormData) => {
+    const { error } = await supabase.auth.updateUser({ password: data.new_password });
+    if (error) {
+      if (/at least|short|weak/i.test(error.message)) {
+        return toast.error(t("auth.passwordTooShort"));
+      }
+      return toast.error(error.message);
+    }
+    toast.success(t("auth.passwordChanged"));
+    passwordForm.reset({ new_password: "", confirm_password: "" });
+  };
 
   const onSubmit = async (data: FormData) => {
     const { error } = await supabase
@@ -123,6 +148,55 @@ export function SettingsPage() {
               <Button type="submit" disabled={form.formState.isSubmitting}>
                 <Save className="h-4 w-4" />
                 {t("common.save")}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card className="max-w-2xl mt-4">
+        <CardHeader>
+          <CardTitle>{t("auth.changePassword")}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form
+            onSubmit={passwordForm.handleSubmit(onChangePassword)}
+            className="space-y-4"
+          >
+            <div>
+              <Label>{t("auth.newPassword")}</Label>
+              <Input
+                type="password"
+                autoComplete="new-password"
+                dir="ltr"
+                className="text-start"
+                {...passwordForm.register("new_password")}
+              />
+              {passwordForm.formState.errors.new_password && (
+                <p className="text-xs text-[color:var(--color-destructive)] mt-1">
+                  {t("auth.passwordTooShort")}
+                </p>
+              )}
+            </div>
+            <div>
+              <Label>{t("auth.confirmPassword")}</Label>
+              <Input
+                type="password"
+                autoComplete="new-password"
+                dir="ltr"
+                className="text-start"
+                {...passwordForm.register("confirm_password")}
+              />
+              {passwordForm.formState.errors.confirm_password && (
+                <p className="text-xs text-[color:var(--color-destructive)] mt-1">
+                  {t("auth.passwordMismatch")}
+                </p>
+              )}
+            </div>
+            <div>
+              <Button type="submit" disabled={passwordForm.formState.isSubmitting}>
+                <KeyRound className="h-4 w-4" />
+                {t("auth.changePassword")}
               </Button>
             </div>
           </form>
