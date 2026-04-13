@@ -170,7 +170,12 @@
     "notes": "بيان",
     "signature": "التوقيع والختم",
     "institutionStamp": "ختم المؤسسة",
-    "receivedBy": "المستلم"
+    "receivedBy": "المستلم",
+    "shareStudent": "إرسال للطالب",
+    "shareParent": "إرسال لولي الأمر",
+    "copyImage": "نسخ الإيصال",
+    "imageCopied": "تم نسخ صورة الإيصال — الصقها حيث تريد (Ctrl+V)",
+    "imageDownloaded": "تم تحميل صورة الإيصال"
   },
   "attendance": {
     "title": "الحضور",

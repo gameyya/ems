@@ -1,11 +1,12 @@
-import { toJpeg } from "html-to-image";
+import { toBlob, toJpeg } from "html-to-image";
 import jsPDF from "jspdf";
-import { Download, Printer } from "lucide-react";
+import { Copy, Download, MessageCircle, Printer } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useSupabaseQuery } from "@/hooks/use-supabase-query";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
@@ -16,7 +17,12 @@ interface ReceiptData {
   payment_date: string;
   notes: string | null;
   cancelled_at: string | null;
-  student: { full_name: string; code: string } | null;
+  student: {
+    full_name: string;
+    code: string;
+    phone: string | null;
+    parent_phone: string | null;
+  } | null;
   settings: {
     institution_name_ar: string;
     address: string | null;
@@ -25,18 +31,43 @@ interface ReceiptData {
   };
 }
 
+function normalizePhone(raw: string): string {
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return "";
+  if (digits.startsWith("00")) return digits.slice(2);
+  if (digits.startsWith("20")) return digits;
+  if (digits.startsWith("0")) return `20${digits.slice(1)}`;
+  return digits;
+}
+
 export function ReceiptPage() {
   const { paymentId } = useParams<{ paymentId: string }>();
   const { t } = useTranslation();
+  const toast = useToast();
   const receiptRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
+  const [sharingTo, setSharingTo] = useState<string | null>(null);
+  const [copying, setCopying] = useState(false);
+  const [canShareFiles, setCanShareFiles] = useState(false);
+
+  useEffect(() => {
+    const nav = navigator as Navigator & {
+      canShare?: (d: { files?: File[] }) => boolean;
+    };
+    try {
+      const probe = new File([new Blob(["x"])], "x.png", { type: "image/png" });
+      setCanShareFiles(Boolean(nav.canShare?.({ files: [probe] })));
+    } catch {
+      setCanShareFiles(false);
+    }
+  }, []);
 
   const { data, loading } = useSupabaseQuery(async () => {
     if (!paymentId) return { data: null, error: { message: "no id" } };
     const [paymentRes, settingsRes] = await Promise.all([
       supabase
         .from("payments")
-        .select("*, student:students(full_name, code)")
+        .select("*, student:students(full_name, code, phone, parent_phone)")
         .eq("id", paymentId)
         .single(),
       supabase.from("settings").select("*").eq("id", 1).single(),
@@ -90,19 +121,112 @@ export function ReceiptPage() {
     }
   };
 
+  const handleShareWhatsApp = async (rawPhone: string) => {
+    if (!data || !receiptRef.current || sharingTo) return;
+    const phone = normalizePhone(rawPhone);
+    if (!phone) return toast.error(t("common.error"));
+    setSharingTo(rawPhone);
+    try {
+      const text =
+        `${t("receipts.title")} ${data.receipt_code}\n` +
+        `${data.student?.full_name ?? ""}\n` +
+        `${t("payments.amount")}: ${formatCurrency(Number(data.amount))}\n` +
+        `${formatDate(data.payment_date)}`;
+      const blob = await toBlob(receiptRef.current, {
+        pixelRatio: 2,
+        backgroundColor: "#ffffff",
+        cacheBust: true,
+      });
+      if (!blob) return;
+      const file = new File([blob], `receipt-${data.receipt_code}.png`, {
+        type: "image/png",
+      });
+      const navAny = navigator as Navigator & {
+        share?: (d: { files?: File[]; text?: string; title?: string }) => Promise<void>;
+      };
+      try {
+        await navAny.share?.({ files: [file], text, title: t("receipts.title") });
+      } catch (err) {
+        if ((err as Error).name !== "AbortError") toast.error((err as Error).message);
+      }
+    } finally {
+      setSharingTo(null);
+    }
+  };
+
+  const handleCopyImage = async () => {
+    if (!data || !receiptRef.current || copying) return;
+    setCopying(true);
+    try {
+      const blob = await toBlob(receiptRef.current, {
+        pixelRatio: 2,
+        backgroundColor: "#ffffff",
+        cacheBust: true,
+      });
+      if (!blob) return;
+      try {
+        await navigator.clipboard.write([
+          new ClipboardItem({ "image/png": blob }),
+        ]);
+        toast.success(t("receipts.imageCopied"));
+      } catch {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `receipt-${data.receipt_code}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+        toast.success(t("receipts.imageDownloaded"));
+      }
+    } finally {
+      setCopying(false);
+    }
+  };
+
   if (loading) return <div className="p-8">{t("common.loading")}</div>;
   if (!data) return <div className="p-8">{t("common.noResults")}</div>;
 
   const pageSize = data.settings.receipt_page_size ?? "a5";
+  const phones: Array<{ raw: string; label: string }> = [];
+  if (data.student?.phone) {
+    phones.push({ raw: data.student.phone, label: t("receipts.shareStudent") });
+  }
+  if (data.student?.parent_phone) {
+    phones.push({ raw: data.student.parent_phone, label: t("receipts.shareParent") });
+  }
 
   return (
     <div className="max-w-3xl mx-auto">
       <style>{`@page { size: ${pageSize} portrait; margin: 10mm; }`}</style>
-      <div className="mb-4 flex justify-between">
+      <div className="mb-4 flex justify-between items-start gap-2 flex-wrap">
         <h1 className="text-xl font-bold">
           {t("receipts.title")} — {data.receipt_code}
         </h1>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          {canShareFiles ? (
+            phones.map((p) => (
+              <Button
+                key={p.raw}
+                onClick={() => handleShareWhatsApp(p.raw)}
+                disabled={sharingTo === p.raw}
+                variant="outline"
+                className="border-emerald-600 text-emerald-700 hover:bg-emerald-50"
+              >
+                <MessageCircle className="h-4 w-4" />
+                {p.label}
+              </Button>
+            ))
+          ) : (
+            <Button
+              onClick={handleCopyImage}
+              disabled={copying}
+              variant="outline"
+              className="border-emerald-600 text-emerald-700 hover:bg-emerald-50"
+            >
+              <Copy className="h-4 w-4" />
+              {t("receipts.copyImage")}
+            </Button>
+          )}
           <Button onClick={() => window.print()} variant="outline">
             <Printer className="h-4 w-4" />
             {t("common.print")}
