@@ -74,7 +74,7 @@ export function AppLayout() {
 
       <aside
         className={cn(
-          "fixed inset-y-0 end-0 z-40 w-64 border-s bg-[color:var(--color-card)] flex flex-col transition-transform lg:static lg:translate-x-0 lg:border-s-0 lg:border-e",
+          "fixed inset-y-0 start-0 z-40 w-64 border-e bg-[color:var(--color-card)] flex flex-col transition-transform lg:static lg:translate-x-0",
           mobileOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0",
         )}
       >
