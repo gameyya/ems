@@ -1,54 +1,12 @@
-import { Document, Font, Page, pdf, StyleSheet, Text, View } from "@react-pdf/renderer";
+import html2pdf from "html2pdf.js";
 import { Download, Printer } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useSupabaseQuery } from "@/hooks/use-supabase-query";
 import { supabase } from "@/lib/supabase";
 import { formatCurrency, formatDate } from "@/lib/utils";
-
-Font.register({
-  family: "Tajawal",
-  fonts: [
-    { src: `${window.location.origin}/fonts/Tajawal-Regular.ttf`, fontWeight: 400 },
-    { src: `${window.location.origin}/fonts/Tajawal-Bold.ttf`, fontWeight: 700 },
-  ],
-});
-
-const styles = StyleSheet.create({
-  page: { padding: 40, fontFamily: "Tajawal", fontSize: 12 },
-  header: { flexDirection: "row-reverse", justifyContent: "space-between", marginBottom: 30 },
-  title: { fontSize: 22, fontWeight: 700, textAlign: "right" },
-  subtitle: { color: "#666", fontSize: 10, textAlign: "right" },
-  receiptCode: { fontSize: 14, fontWeight: 700, direction: "ltr" },
-  section: { marginBottom: 16 },
-  row: { flexDirection: "row-reverse", borderBottom: "1pt solid #eee", paddingVertical: 6 },
-  label: { width: "40%", color: "#666", textAlign: "right" },
-  value: { width: "60%", fontWeight: 700, textAlign: "right" },
-  amountBox: {
-    marginVertical: 20,
-    padding: 16,
-    backgroundColor: "#f0f9ff",
-    border: "1pt solid #0ea5e9",
-    borderRadius: 6,
-  },
-  amountLabel: { fontSize: 10, color: "#0369a1", textAlign: "right" },
-  amountValue: {
-    fontSize: 28,
-    fontWeight: 700,
-    color: "#0c4a6e",
-    textAlign: "right",
-    marginTop: 4,
-  },
-  footer: {
-    marginTop: 40,
-    flexDirection: "row-reverse",
-    justifyContent: "space-between",
-  },
-  signBox: { width: "40%", alignItems: "center", paddingTop: 40, borderTop: "1pt solid #333" },
-  signLabel: { fontSize: 10, color: "#666" },
-});
 
 interface ReceiptData {
   receipt_code: string;
@@ -61,73 +19,11 @@ interface ReceiptData {
   settings: { institution_name_ar: string; address: string | null; phone: string | null };
 }
 
-function ReceiptPDF({ data, t }: { data: ReceiptData; t: (k: string) => string }) {
-  return (
-    <Document>
-      <Page size="A5" style={styles.page} wrap>
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.title}>{data.settings.institution_name_ar}</Text>
-            {data.settings.address && <Text style={styles.subtitle}>{data.settings.address}</Text>}
-            {data.settings.phone && <Text style={styles.subtitle}>{data.settings.phone}</Text>}
-          </View>
-          <View>
-            <Text style={styles.subtitle}>{t("receipts.receiptNo")}</Text>
-            <Text style={styles.receiptCode}>{data.receipt_code}</Text>
-            <Text style={styles.subtitle}>{formatDate(data.payment_date)}</Text>
-          </View>
-        </View>
-
-        <Text style={{ ...styles.title, fontSize: 16, marginBottom: 16 }}>
-          {t("receipts.title")}
-        </Text>
-
-        <View style={styles.section}>
-          <View style={styles.row}>
-            <Text style={styles.label}>{t("receipts.receivedFrom")}</Text>
-            <Text style={styles.value}>{data.student?.full_name ?? "—"}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>{t("payments.method")}</Text>
-            <Text style={styles.value}>
-              {t(data.method === "cash" ? "payments.methodCash" : "payments.methodOther")}
-            </Text>
-          </View>
-          {data.notes && (
-            <View style={styles.row}>
-              <Text style={styles.label}>{t("receipts.notes")}</Text>
-              <Text style={styles.value}>{data.notes}</Text>
-            </View>
-          )}
-        </View>
-
-        <View style={styles.amountBox}>
-          <Text style={styles.amountLabel}>{t("receipts.amount")}</Text>
-          <Text style={styles.amountValue}>{formatCurrency(Number(data.amount))}</Text>
-        </View>
-
-        {data.cancelled_at && (
-          <Text style={{ color: "red", textAlign: "center", fontSize: 20, marginVertical: 10 }}>
-            *** {t("payments.cancelled")} ***
-          </Text>
-        )}
-
-        <View style={styles.footer}>
-          <View style={styles.signBox}>
-            <Text style={styles.signLabel}>{t("receipts.institutionStamp")}</Text>
-          </View>
-          <View style={styles.signBox}>
-            <Text style={styles.signLabel}>{t("receipts.receivedBy")}</Text>
-          </View>
-        </View>
-      </Page>
-    </Document>
-  );
-}
-
 export function ReceiptPage() {
   const { paymentId } = useParams<{ paymentId: string }>();
   const { t } = useTranslation();
+  const receiptRef = useRef<HTMLDivElement>(null);
+  const [exporting, setExporting] = useState(false);
 
   const { data, loading } = useSupabaseQuery(async () => {
     if (!paymentId) return { data: null, error: { message: "no id" } };
@@ -157,21 +53,20 @@ export function ReceiptPage() {
     document.title = data ? `${t("receipts.title")} ${data.receipt_code}` : t("receipts.title");
   }, [data, t]);
 
-  const [exporting, setExporting] = useState(false);
-
   const handleExportPdf = async () => {
-    if (!data || exporting) return;
+    if (!data || !receiptRef.current || exporting) return;
     setExporting(true);
     try {
-      const blob = await pdf(<ReceiptPDF data={data} t={t} />).toBlob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `receipt-${data.receipt_code}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
+      await html2pdf()
+        .set({
+          margin: 10,
+          filename: `receipt-${data.receipt_code}.pdf`,
+          image: { type: "jpeg", quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
+          jsPDF: { unit: "mm", format: "a5", orientation: "portrait" },
+        })
+        .from(receiptRef.current)
+        .save();
     } finally {
       setExporting(false);
     }
@@ -198,8 +93,10 @@ export function ReceiptPage() {
         </div>
       </div>
 
-      {/* On-screen printable receipt */}
-      <div className="print-area bg-white border rounded-lg p-8 shadow-sm print:border-0 print:shadow-none">
+      <div
+        ref={receiptRef}
+        className="print-area bg-white border rounded-lg p-8 shadow-sm print:border-0 print:shadow-none"
+      >
         <div className="flex items-start justify-between mb-6 border-b pb-4">
           <div>
             <h2 className="text-2xl font-bold">{data.settings.institution_name_ar}</h2>
