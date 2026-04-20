@@ -62,9 +62,44 @@ export interface ClassRow {
   schedule_time: string | null;
   capacity: number | null;
   notes: string | null;
+  registration_queue_active: boolean;
   deleted_at: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface ClassRegistrationLink {
+  id: string;
+  class_id: string;
+  token: string;
+  expires_at: string | null;
+  enabled: boolean;
+  created_by: string | null;
+  created_at: string;
+}
+
+export type ClassRegistrationStatus = "pending" | "approved" | "rejected";
+
+export interface ClassRegistration {
+  id: string;
+  class_id: string;
+  link_id: string | null;
+  full_name: string;
+  phone: string | null;
+  parent_name: string | null;
+  parent_phone: string | null;
+  address: string | null;
+  notes: string | null;
+  status: ClassRegistrationStatus;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  created_student_id: string | null;
+  created_at: string;
+}
+
+export interface ClassPendingCount {
+  class_id: string;
+  pending: number;
 }
 
 export interface Enrollment {
@@ -131,16 +166,20 @@ export type Database = {
       enrollments: Table<Enrollment>;
       payments: Table<Payment>;
       attendance: Table<Attendance>;
+      class_registration_links: Table<ClassRegistrationLink>;
+      class_registrations: Table<ClassRegistration>;
     };
     Views: {
       v_class_enrollment_counts: { Row: ClassEnrollmentCount; Relationships: [] };
       v_student_balance: { Row: StudentBalance; Relationships: [] };
+      v_class_pending_registrations: { Row: ClassPendingCount; Relationships: [] };
     };
     Functions: Record<string, never>;
     Enums: {
       user_role: UserRole;
       payment_method: PaymentMethod;
       attendance_status: AttendanceStatus;
+      class_registration_status: ClassRegistrationStatus;
     };
     CompositeTypes: Record<string, never>;
   };

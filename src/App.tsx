@@ -17,23 +17,20 @@ const StudentDetailPage = lazy(() =>
 const TeachersPage = lazy(() =>
   import("@/pages/teachers").then((m) => ({ default: m.TeachersPage })),
 );
-const ClassesPage = lazy(() =>
-  import("@/pages/classes").then((m) => ({ default: m.ClassesPage })),
-);
+const ClassesPage = lazy(() => import("@/pages/classes").then((m) => ({ default: m.ClassesPage })));
 const PaymentsPage = lazy(() =>
   import("@/pages/payments").then((m) => ({ default: m.PaymentsPage })),
 );
-const ReceiptPage = lazy(() =>
-  import("@/pages/receipt").then((m) => ({ default: m.ReceiptPage })),
-);
+const ReceiptPage = lazy(() => import("@/pages/receipt").then((m) => ({ default: m.ReceiptPage })));
 const AttendancePage = lazy(() =>
   import("@/pages/attendance").then((m) => ({ default: m.AttendancePage })),
 );
-const ReportsPage = lazy(() =>
-  import("@/pages/reports").then((m) => ({ default: m.ReportsPage })),
-);
+const ReportsPage = lazy(() => import("@/pages/reports").then((m) => ({ default: m.ReportsPage })));
 const SettingsPage = lazy(() =>
   import("@/pages/settings").then((m) => ({ default: m.SettingsPage })),
+);
+const ClassRegisterPage = lazy(() =>
+  import("@/pages/class-register").then((m) => ({ default: m.ClassRegisterPage })),
 );
 
 function PageFallback() {
@@ -46,6 +43,7 @@ export default function App() {
       <Suspense fallback={<PageFallback />}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/register/:token" element={<ClassRegisterPage />} />
           <Route
             element={
               <ProtectedRoute>
