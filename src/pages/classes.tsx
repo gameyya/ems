@@ -381,7 +381,17 @@ function EnrollDialog({ cls, onClose }: { cls: ClassRow; onClose: () => Promise<
     return { data: res.data ?? [], error: res.error };
   }, [cls.id]);
 
+  // All enrollments across all classes — for excluding students already in another class.
+  const { data: allEnrolled, refetch: refetchAllEnrolled } = useSupabaseQuery(async () => {
+    const res = await supabase.from("enrollments").select("student_id");
+    return { data: res.data ?? [], error: res.error };
+  });
+
   const enrolledSet = useMemo(() => new Set((enrolled ?? []).map((e) => e.student_id)), [enrolled]);
+  const enrolledAnywhereSet = useMemo(
+    () => new Set((allEnrolled ?? []).map((e) => e.student_id)),
+    [allEnrolled],
+  );
 
   const toggle = (id: string) => {
     setSelected((s) => {
@@ -396,10 +406,15 @@ function EnrollDialog({ cls, onClose }: { cls: ClassRow; onClose: () => Promise<
     if (selected.size === 0) return;
     const rows = Array.from(selected).map((student_id) => ({ class_id: cls.id, student_id }));
     const { error } = await supabase.from("enrollments").insert(rows);
-    if (error) return toast.error(error.message);
+    if (error) {
+      const msg = /enrollments_student_unique|duplicate key/.test(error.message)
+        ? t("classes.studentAlreadyEnrolled")
+        : error.message;
+      return toast.error(msg);
+    }
     toast.success(t("common.saved"));
     setSelected(new Set());
-    await refetchEnrolled();
+    await Promise.all([refetchEnrolled(), refetchAllEnrolled()]);
   };
 
   const handleRemove = async (studentId: string) => {
@@ -409,12 +424,12 @@ function EnrollDialog({ cls, onClose }: { cls: ClassRow; onClose: () => Promise<
       .eq("class_id", cls.id)
       .eq("student_id", studentId);
     if (error) return toast.error(error.message);
-    await refetchEnrolled();
+    await Promise.all([refetchEnrolled(), refetchAllEnrolled()]);
   };
 
   const [searchTerm, setSearchTerm] = useState("");
   const available = (students ?? []).filter((s) => {
-    if (enrolledSet.has(s.id)) return false;
+    if (enrolledAnywhereSet.has(s.id)) return false;
     const q = searchTerm.trim().toLowerCase();
     if (!q) return true;
     return s.full_name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q);
@@ -759,7 +774,12 @@ function ReviewPendingDialog({
     setProcessing(id);
     const { error } = await supabase.rpc("approve_class_registration", { p_reg_id: id });
     setProcessing(null);
-    if (error) return toast.error(error.message);
+    if (error) {
+      const msg = error.message.includes("student_already_enrolled")
+        ? t("classes.studentAlreadyEnrolled")
+        : error.message;
+      return toast.error(msg);
+    }
     toast.success(t("common.saved"));
     setList((l) => l.filter((r) => r.id !== id));
   };

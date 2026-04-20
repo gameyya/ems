@@ -74,6 +74,8 @@ export function ClassRegisterPage() {
     if (error) {
       if (error.message.includes("link_invalid")) {
         setInvalid(true);
+      } else if (error.message.includes("student_already_enrolled")) {
+        setSubmitError(t("publicRegister.alreadyEnrolled"));
       } else {
         setSubmitError(error.message);
       }
