@@ -78,9 +78,33 @@ export function DashboardPage() {
     };
   });
 
+  const quickActions = (
+    <Card>
+      <CardHeader>
+        <CardTitle>{t("dashboard.quickActions")}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        <Link to="/students">
+          <Button variant="outline" className="w-full justify-start">
+            <Plus className="h-4 w-4" />
+            {t("dashboard.newStudent")}
+          </Button>
+        </Link>
+        <Link to="/payments">
+          <Button variant="outline" className="w-full justify-start">
+            <Receipt className="h-4 w-4" />
+            {t("dashboard.newPayment")}
+          </Button>
+        </Link>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <div className="space-y-6">
       <PageHeader title={t("dashboard.title")} description={t("app.name")} />
+
+      <div className="md:hidden">{quickActions}</div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
@@ -139,25 +163,7 @@ export function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("dashboard.quickActions")}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <Link to="/students">
-              <Button variant="outline" className="w-full justify-start">
-                <Plus className="h-4 w-4" />
-                {t("dashboard.newStudent")}
-              </Button>
-            </Link>
-            <Link to="/payments">
-              <Button variant="outline" className="w-full justify-start">
-                <Receipt className="h-4 w-4" />
-                {t("dashboard.newPayment")}
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
+        <div className="hidden md:block">{quickActions}</div>
       </div>
     </div>
   );
